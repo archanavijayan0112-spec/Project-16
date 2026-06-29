@@ -1,0 +1,30 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DOCMIND_CONFIG=/app/config.yaml
+    volumes:
+      - ./docs:/app/docs:ro
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
